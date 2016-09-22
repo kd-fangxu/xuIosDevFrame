@@ -13,5 +13,6 @@
 @interface DeviceTools : NSObject
 + (NSString *)getDeviceId;//获取设备唯一码 通过keychain
 + (float)getIOSVersion;
+
 +(NSString *) getDeviceModel;
 @end
