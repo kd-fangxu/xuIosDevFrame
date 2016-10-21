@@ -45,4 +45,14 @@
             param:(NSMutableDictionary *_Nullable)mapParam
           success:(nullable void (^)(NSURLSessionDataTask *_Nullable task , id _Nullable responseObject) )success
           failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task, NSError *_Nullable error))failure ;
+
+
+
+
+-(void) doCommonRequest:(NSString *) baseUrl param:(NSMutableDictionary *) params responseSerializer:(NSString *)serializer uccess:(void (^)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable error))failure;
+
+-(AFHTTPSessionManager *_Nonnull) getAFSessionManager;
+
+-(NSString *_Nonnull) getRequestUrlBytaskId:(NSString *_Nullable) taskId;
+
 @end

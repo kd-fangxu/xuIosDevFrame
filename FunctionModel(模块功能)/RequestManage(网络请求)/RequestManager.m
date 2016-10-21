@@ -40,19 +40,16 @@
 
 }
 
--(void) doCommonRequest:(NSString *) baseUrl param:(NSMutableDictionary *) params responseSerializer:(NSString *)serializer uccess:(void (^)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable))failure{
-    AFSecurityPolicy *securityPolicy = [[AFSecurityPolicy alloc] init];
-    [securityPolicy setAllowInvalidCertificates:YES];
+-(void) doCommonRequest:(NSString *) baseUrl param:(NSMutableDictionary *) params responseSerializer:(NSString *)serializer uccess:(void (^)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable error))failure{
 
-    AFHTTPSessionManager *httpManager=[[AFHTTPSessionManager alloc] init];
-
-    [httpManager setSecurityPolicy:securityPolicy];
+    AFHTTPSessionManager *httpManager=[self getAFSessionManager];
     if([serializer.lowercaseString isEqualToString:@"json"]){
         httpManager.responseSerializer = [AFJSONResponseSerializer serializer];// json响应
     }else{
         httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
     }
     httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html", nil];
+
     NSString* GETURL=[NSString stringWithFormat:@"%@?%@",baseUrl,[params URLQueryString]];
     NSLog(@"GETURL:%@",GETURL);
     if ([GETURL isValidUrl]) {
@@ -66,7 +63,18 @@
 
 
 }
+-(AFHTTPSessionManager *)getAFSessionManager{
+    AFSecurityPolicy *securityPolicy = [[AFSecurityPolicy alloc] init];
+    [securityPolicy setAllowInvalidCertificates:YES];
+    AFHTTPSessionManager *httpManager=[[AFHTTPSessionManager alloc] init];
+    [httpManager setSecurityPolicy:securityPolicy];
+    httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
 
+httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html", nil];
+
+      return httpManager;
+
+}
 -(void)doRequest:(NSString *)taskId param:(NSMutableDictionary *)mapParam responseSerializer:(NSString *) serializer success:(void (^)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable))failure{
 
     if ([self requestMainMap]==nil) {
@@ -76,13 +84,35 @@
                           userInfo: nil];
         @throw e;
     }
+    @try {
+        NSString * urlString=[self getRequestUrlBytaskId:taskId];
+        if (urlString!=nil) {
+            [self doCommonRequest:urlString param:mapParam responseSerializer:serializer uccess:success failure:failure];
+        }
+    } @catch (NSException *exception) {
+        NSLog(@"%@",exception);
+    } @finally {
+
+    }
+
+
+}
+
+-(NSString *) getRequestUrlBytaskId:(NSString *) taskId{
+
     RequestItem * currentRequestItem=[self getRequestItemByTaskId:[self requestMainMap] id:taskId];
     if (currentRequestItem==nil) {
         NSMutableDictionary *dic=[[NSMutableDictionary alloc] init];
         [dic  setValue:[NSString stringWithFormat:@"配置文件不存在taskid为%@的请求项",taskId] forKey:@"reason"];
         NSError * error=[[NSError alloc] initWithDomain:@"请求出错" code:1 userInfo:dic];
-        failure(nil,error);
-        return;
+        NSException *e = [NSException
+                          exceptionWithName: @"异常情况"
+                          reason:[NSString stringWithFormat:@"配置文件不存在taskid为%@的请求项",taskId]
+                          userInfo: dic];
+        @throw e;
+
+        //        failure(nil,error);
+        return @"";
     }
     NSString * urlString;
     if ([currentRequestItem.Url isValidUrl]) {
@@ -91,12 +121,9 @@
         urlString=[[self requestMainMap].domainName stringByAppendingString:currentRequestItem.Url];
     }
     urlString=[urlString stringByReplacingOccurrencesOfString:@" " withString:@""];
-    //    httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObject:@"text/html"];
-    //    httpManager.requestSerializer=[AFHTTPRequestSerializer serializer];
-
-    [self doCommonRequest:urlString param:mapParam responseSerializer:serializer uccess:success failure:failure];
-
+    return  urlString;
 }
+
 -(void)doRequest:(NSString *)taskId param:(NSMutableDictionary *)mapParam success:(void (^)(NSURLSessionDataTask * _Nullable, id _Nullable))success failure:(void (^)(NSURLSessionDataTask * _Nullable, NSError * _Nullable))failure{
     [self doRequest:taskId param:mapParam responseSerializer:@"json" success:success failure:failure];
 }
