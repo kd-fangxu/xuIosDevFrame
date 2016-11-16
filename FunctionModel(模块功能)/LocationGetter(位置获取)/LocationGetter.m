@@ -8,6 +8,9 @@
 
 #import "LocationGetter.h"
 
+/**
+ 位置获取的方法必须在viewController中显示调用才有效  这个函数 待优化
+ */
 @implementation LocationGetter
 - (instancetype)init
 {

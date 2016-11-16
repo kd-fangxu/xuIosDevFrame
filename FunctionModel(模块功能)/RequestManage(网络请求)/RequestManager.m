@@ -41,7 +41,6 @@
 }
 
 -(void) doCommonRequest:(NSString *) baseUrl param:(NSMutableDictionary *) params responseSerializer:(NSString *)serializer uccess:(void (^)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable error))failure{
-
     AFHTTPSessionManager *httpManager=[self getAFSessionManager];
     if([serializer.lowercaseString isEqualToString:@"json"]){
         httpManager.responseSerializer = [AFJSONResponseSerializer serializer];// json响应
@@ -59,9 +58,6 @@
             failure(task,error);
         }];
     }
-
-
-
 }
 -(AFHTTPSessionManager *)getAFSessionManager{
     AFSecurityPolicy *securityPolicy = [[AFSecurityPolicy alloc] init];
@@ -69,8 +65,7 @@
     AFHTTPSessionManager *httpManager=[[AFHTTPSessionManager alloc] init];
     [httpManager setSecurityPolicy:securityPolicy];
     httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
-
-httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html", nil];
+    httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html", nil];
 
       return httpManager;
 
@@ -94,8 +89,11 @@ httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"
     } @finally {
 
     }
+}
 
 
+-(void)doRequest:(NSString *)taskId param:(NSMutableDictionary *)mapParam success:(void (^)(NSURLSessionDataTask * _Nullable, id _Nullable))success failure:(void (^)(NSURLSessionDataTask * _Nullable, NSError * _Nullable))failure{
+    [self doRequest:taskId param:mapParam responseSerializer:@"json" success:success failure:failure];
 }
 
 -(NSString *) getRequestUrlBytaskId:(NSString *) taskId{
@@ -124,19 +122,6 @@ httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"
     return  urlString;
 }
 
--(void)doRequest:(NSString *)taskId param:(NSMutableDictionary *)mapParam success:(void (^)(NSURLSessionDataTask * _Nullable, id _Nullable))success failure:(void (^)(NSURLSessionDataTask * _Nullable, NSError * _Nullable))failure{
-    [self doRequest:taskId param:mapParam responseSerializer:@"json" success:success failure:failure];
-}
-/**
- *  @author lz developer
- *
- *  根据taskid获取对应的请求对象
- *
- *  @param requestMap <#requestMap description#>
- *  @param taskId     <#taskId description#>
- *
- *  @return <#return value description#>
- */
 -(RequestItem *) getRequestItemByTaskId:(RequestMainMap *) requestMap id:(NSString *) taskId{
     NSMutableArray<RequestItem * > * requestArray=[self requestMainMap].list;
 
