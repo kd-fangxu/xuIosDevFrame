@@ -15,4 +15,6 @@
  *  @return  JSON字符串
  */
 -(NSString *)JSONString;
++ (NSString*)convertToJSONData;
++ (NSDictionary *)dictionaryWithJsonString:(NSString *)jsonString;
 @end
