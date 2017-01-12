@@ -12,18 +12,28 @@
 #import "NSString+RegexCategory.h"
 #import "NSString+UrlEncode.h"
 #import "NSDictionary+URL.h"
+#import "NSDictionary+Block.h"
 #import "NSString+Trims.h"
 @protocol RequestDataProviderDelegate <NSObject>
 
 @required
-
-
+-(RequestMainMap *_Nonnull) convertToRequestMainMap:(NSString * _Nonnull)configStr;
 @end
+
 @interface RequestManager : NSObject
+
 @property (nonatomic,strong)  RequestMainMap* _Nullable  requestMainMap;
+typedef  NSString  * _Nonnull(^ ConfigTextProviderBlock )();
+@property (nonatomic,strong)  ConfigTextProviderBlock _Nonnull configBlock;
+
++(void) init:(ConfigTextProviderBlock _Nonnull) configBlock Delegate:(id<RequestDataProviderDelegate> _Nonnull) delegate ;
+
+
+@property (nonatomic,strong) _Nullable id  <RequestDataProviderDelegate> commandPeoviderDelegate;
+
+@property (nonatomic,strong) NSString * _Nullable configText;//配置文件内容
 
 +(RequestManager *_Nonnull)getInstance;
-
 -(void) doRequest:(NSString *_Nonnull) taskId
             param:(NSMutableDictionary *_Nullable)mapParam responseSerializer:(NSString * _Nonnull) serializer
           success:( void (^_Nullable)(NSURLSessionDataTask *_Nullable task , id _Nullable responseObject))success
@@ -41,7 +51,7 @@
           failure:(nullable void (^)(NSURLSessionDataTask * _Nullable task , NSError *_Nullable error))failure ;
 
 
--(void) doCommonRequest:(NSString *_Nonnull) baseUrl param:(NSMutableDictionary *_Nullable) params responseSerializer:(NSString *_Nonnull)serializer uccess:(void (^_Nullable)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^_Nullable)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable error))failure;
+-(void) doCommonRequest:(NSString *_Nonnull) baseUrl param:(NSMutableDictionary *_Nullable) params responseSerializer:(NSString *_Nonnull)serializer requestMethod:(NSString *) method success:(void (^_Nullable)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^_Nullable)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable error))failure;
 
 
 -(AFHTTPSessionManager *_Nonnull) getAFSessionManager;
