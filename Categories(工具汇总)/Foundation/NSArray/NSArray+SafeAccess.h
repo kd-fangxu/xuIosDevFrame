@@ -81,4 +81,5 @@
 -(void)addSize:(CGSize)o;
 
 -(void)addRect:(CGRect)o;
++ (NSMutableArray *)ArrayWithJsonString:(NSString *)jsonString;
 @end

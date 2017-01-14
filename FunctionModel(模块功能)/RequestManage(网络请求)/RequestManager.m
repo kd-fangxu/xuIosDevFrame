@@ -70,7 +70,7 @@ static RequestManager * manager=nil;
     }else{
         httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
     }
-    httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html", nil];
+ httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html",@"application/x-javascript", nil];
     NSString * GETURL=baseUrl;
 
     if ([method.lowercaseString isEqualToString:@"get"]) {
@@ -88,7 +88,7 @@ static RequestManager * manager=nil;
     AFHTTPSessionManager *httpManager=[[AFHTTPSessionManager alloc] init];
     [httpManager setSecurityPolicy:securityPolicy];
     httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
-    httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html",@"application/x-javascript", nil];
+
 
     return httpManager;
 
