@@ -20,10 +20,10 @@ static RequestManager * manager=nil;
             manager.configText=configBlock();
             manager.configText=  [manager.configText trimmingWhitespace];
             manager.commandPeoviderDelegate=delegate;
+            manager.netEnergy=[[IYYAfnetEnergy alloc] init];//使用Afnetwork封装库
         }
     }
-
-                  );
+    );
 }
 
 
@@ -45,8 +45,6 @@ static RequestManager * manager=nil;
     return manager;
 }
 
-
-
 -(RequestMainMap*) requestMainMap{
     if (_requestMainMap==nil) {
         @try {
@@ -61,26 +59,27 @@ static RequestManager * manager=nil;
     return  _requestMainMap;
 
 }
-
--(void)doCommonRequest:(NSString *)baseUrl param:(NSMutableDictionary *)params responseSerializer:(NSString *)serializer requestMethod:(NSString *)method success:(void (^)(NSURLSessionDataTask * _Nullable, id _Nullable))success failure:(void (^)(NSURLSessionDataTask * _Nullable, NSError * _Nullable))failure{
-
+-(NSURLSessionDataTask*) doCommonRequest:(NSString *)baseUrl param:(NSMutableDictionary *)params responseSerializer:(NSString *)serializer requestMethod:(NSString *)method success:(void (^)(NSURLSessionDataTask * _Nullable, id _Nullable))success failure:(void (^)(NSURLSessionDataTask * _Nullable, NSError * _Nullable))failure{
     AFHTTPSessionManager *httpManager=[self getAFSessionManager];
     if([serializer.lowercaseString isEqualToString:@"json"]){
         httpManager.responseSerializer = [AFJSONResponseSerializer serializer];// json响应
     }else{
         httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
     }
- httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html",@"application/x-javascript", nil];
+    httpManager.responseSerializer.acceptableContentTypes = [NSSet setWithObjects:@"application/json", @"text/json", @"text/javascript",@"text/html",@"application/x-javascript", nil];
     NSString * GETURL=baseUrl;
 
     if ([method.lowercaseString isEqualToString:@"get"]) {
-        [httpManager GET:GETURL parameters:params progress:nil success:success failure:failure];
+        return  [httpManager GET:GETURL parameters:params progress:nil success:success failure:failure];
     }else{
-        [httpManager POST:GETURL parameters:params progress:nil success:success failure:failure];
+        return [httpManager POST:GETURL parameters:params progress:nil success:success failure:failure];
 
     }
-    //      NSString* GETURL=[NSString stringWithFormat:@"%@?%@",baseUrl,[params URLQueryString]];
+    return nil;
+//    [manager.operationQueue cancelAllOperations];
 }
+
+
 
 -(AFHTTPSessionManager *)getAFSessionManager{
     AFSecurityPolicy *securityPolicy = [[AFSecurityPolicy alloc] init];
@@ -88,11 +87,91 @@ static RequestManager * manager=nil;
     AFHTTPSessionManager *httpManager=[[AFHTTPSessionManager alloc] init];
     [httpManager setSecurityPolicy:securityPolicy];
     httpManager.responseSerializer=[AFHTTPResponseSerializer serializer];//nsdata 响应
-
-
     return httpManager;
 
 }
+
+/**
+ 根据任务id发起一个请求 （推荐）
+
+ @param taskId      任务id
+ @param mapParam    参数
+ @param serializer  json or ..
+ @param cacheFlag   是否缓存优先
+ @param success    callback
+ @param failure    callback
+
+ @return NSURLSessionDataTask
+ */
+-(NSURLSessionDataTask *)doRequest:(NSString *)taskId
+                             param:(NSMutableDictionary *)mapParam
+                responseSerializer:(NSString *) serializer
+                      isCacheFirst:(BOOL) cacheFlag
+                      successBlock:(void (^) (id _Nullable responseObject))success
+                      failureBlock:(void (^)(NSError * _Nullable))failure{
+    if (_netEnergy) {
+        if ([self requestMainMap]==nil) {
+            NSException *e = [NSException
+                              exceptionWithName: @"异常情况"
+                              reason: @"RequestMap 不允许为空"
+                              userInfo: nil];
+            @throw e;
+        }
+
+        @try {
+            NSString * urlString=[self getRequestUrlBytaskId:taskId];
+            RequestItem * currentRequestItem=[self getRequestItemByTaskId:[self requestMainMap] id:taskId];
+            for (ParamItem * paramItem in currentRequestItem.params) {
+                if (paramItem.key!=nil&&![paramItem.key isEqualToString:@""]&&paramItem.isNessary&&![mapParam hasKey:paramItem.key]) {
+                    @throw[NSString stringWithFormat:@"缺少key值为%@得要参数",paramItem.key];
+                    return nil;
+                }
+            }
+            if (urlString!=nil) {
+               return  [_netEnergy doCommonRequestUrl:urlString param:mapParam responseSerializer:serializer requestMethod:currentRequestItem.requestMethod isFromCacheFirst:cacheFlag success:^(id responseObject) {
+                   if (success) {
+                       success(responseObject);
+                   }
+                } failure:^(NSError *error) {
+                    if (failure) {
+                        failure(error);
+                    }
+                }];
+            }
+        } @catch (NSException *exception) {
+            NSLog(@"%@",exception);
+        } @finally {
+            
+        }
+    }
+    return  nil;
+
+}
+
+
+-(NSURLSessionDataTask *)doCommonRequest:(NSString *)baseUrl param:(NSMutableDictionary *)params responseSerializer:(NSString *)serializer requestMethod:(NSString *)method IsCacheFirst:(BOOL)cacheFlag success:(void (^)(id _Nullable))success failure:(void (^)(NSError * _Nullable))failure{
+
+    if (baseUrl!=nil&&_netEnergy!=NULL) {
+        return  [_netEnergy doCommonRequestUrl:baseUrl param:params responseSerializer:serializer requestMethod:method isFromCacheFirst:cacheFlag success:^(id responseObject) {
+            if (success) {
+                success(responseObject);
+            }
+        } failure:^(NSError *error) {
+            if (failure) {
+                failure(error);
+            }
+        }];
+    }else{
+        NSError * error=[[NSError alloc] init];
+        [error setValue: @"baseURL 或 _netEnergy 为空"forKey:@"reason"];
+//        failure(@"baseURL 或 _netEnergy 为空");
+        if (failure) {
+            failure(error);
+        }
+    }
+    return  nil;
+}
+
 -(void)doRequest:(NSString *)taskId param:(NSMutableDictionary *)mapParam responseSerializer:(NSString *) serializer success:(void (^)(NSURLSessionDataTask * _Nullable task, id _Nullable responseObject))success failure:(void (^)(NSURLSessionDataTask * _Nullable task, NSError * _Nullable))failure{
 
     if ([self requestMainMap]==nil) {
